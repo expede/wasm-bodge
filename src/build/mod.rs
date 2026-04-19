@@ -32,7 +32,8 @@ pub fn run(config: BuildConfig) -> Result<()> {
         wasm_bindgen::build_wasm(
             crate_path,
             &wasm_bindgen_dir,
-            &config.profile,
+            &config.release_profile,
+            &config.debug_profile,
             config.wasm_opt,
             config.debug_variant,
         )?;

@@ -7,6 +7,15 @@
   for manual initialization switch to `/debug/slim` while debugging without
   otherwise changing their code.
 
+* Two new CLI flags: `--release-profile <name>` (alias of the existing
+  `--profile`) and `--debug-profile <name>` (only meaningful with
+  `--debug-variant`; defaults to `wasm-debug`). `--debug-variant` now drives
+  a second `cargo build --profile <debug-profile>` when that profile is
+  declared in the crate's `Cargo.toml` or workspace root. If the profile is
+  not declared, wasm-bodge warns and falls back to copying the release wasm
+  (the previous behavior), so existing `--debug-variant` invocations keep
+  working.
+
 ### Fixed
 
 * Manually initializing the debug wasm now works. Use `/debug/slim`
@@ -16,6 +25,14 @@
   `TypeError: wasm.__wbindgen_export3 is not a function`, because
   `wasm-opt` renames wasm exports in the optimized variant and
   `/slim`'s JS bindings are pinned to those renamed names.
+
+* `--debug-variant` previously produced a debug-only-in-name build when
+  the consumer's `[profile.release]` did not preserve DWARF: it copied
+  the already-compiled release wasm and ran `wasm-bindgen --keep-debug`
+  on it, which is a no-op when there are no debug symbols to keep.
+  `--debug-variant` now drives a dedicated `[profile.wasm-debug]` build
+  (or a user-supplied `--debug-profile`), guaranteeing DWARF in the
+  packaged `/debug/*` artifacts when the profile is configured correctly.
 
 ## 0.2.3 - 17th April 2026
 

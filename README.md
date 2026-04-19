@@ -92,7 +92,9 @@ wasm-bodge build [OPTIONS]
 | `--crate-path <PATH>` | `.` (current dir) | Path to the Rust crate directory |
 | `--package-json <PATH>` | `./package.json` | Path to template package.json |
 | `--out-dir <PATH>` | `./dist` | Output directory for generated files |
-| `--profile <PROFILE>` | `release` | Cargo build profile |
+| `--release-profile <PROFILE>` | `release` | Cargo profile for the release variant (alias: `--profile`) |
+| `--debug-profile <PROFILE>` | `wasm-debug` | Cargo profile for the debug variant (requires `--debug-variant`) |
+| `--debug-variant` | `false` | Also build a debug variant exposed via `./debug/*` subpath exports |
 | `--wasm-bindgen-tar <PATH>` | (none) | Use prebuilt wasm-bindgen output from tarball |
 | `--no-wasm-opt` | `false` | Skip wasm-opt optimization |
 
@@ -101,6 +103,35 @@ wasm-bodge build [OPTIONS]
 - `wasm-bindgen-cli` (`cargo install wasm-bindgen-cli`)
 - `wasm-opt` (`cargo install wasm-opt`) — disable with `--no-wasm-opt`
 - `esbuild` (`npm install -g esbuild` or local install)
+
+### Debug builds
+
+Passing `--debug-variant` produces parallel `./debug`, `./debug/slim`,
+`./debug/wasm`, `./debug/wasm-base64`, and `./debug/iife` exports alongside
+the optimized ones. The debug wasm preserves DWARF so it can be stepped
+through in browser devtools.
+
+For the debug build to actually contain DWARF, the Rust crate needs a
+dedicated profile. Add the following to your `Cargo.toml` (or your
+workspace root's `Cargo.toml`):
+
+```toml
+[profile.wasm-debug]
+inherits = "dev"
+debug = "full"
+opt-level = 0
+strip = "none"
+```
+
+wasm-bodge then runs two independent `cargo build` invocations — one with
+`--release-profile` (default `release`), one with `--debug-profile`
+(default `wasm-debug`) — and feeds each to `wasm-bindgen` independently.
+`wasm-opt` is only applied to the release wasm.
+
+If `--debug-variant` is passed but no `[profile.wasm-debug]` section is
+declared, wasm-bodge emits a warning and falls back to copying the release
+wasm into the debug slot. DWARF will then only be preserved if your
+`[profile.release]` already preserves it.
 
 ---
 

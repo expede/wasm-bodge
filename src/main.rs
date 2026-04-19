@@ -29,9 +29,15 @@ enum Commands {
         #[arg(long, default_value = "./dist")]
         out_dir: PathBuf,
 
-        /// Cargo build profile
-        #[arg(long, default_value = "release")]
-        profile: String,
+        /// Cargo build profile for the release variant (optimized; wasm-opt
+        /// applied unless --no-wasm-opt is set).
+        #[arg(long, alias = "profile", default_value = "release")]
+        release_profile: String,
+
+        /// Cargo build profile for the debug variant (DWARF preserved; no
+        /// wasm-opt). Only meaningful with --debug-variant.
+        #[arg(long, default_value = "wasm-debug", requires = "debug_variant")]
+        debug_profile: String,
 
         /// Use prebuilt wasm-bindgen output from tarball
         #[arg(long)]
@@ -56,7 +62,8 @@ fn main() -> Result<()> {
             crate_path,
             package_json,
             out_dir,
-            profile,
+            release_profile,
+            debug_profile,
             wasm_bindgen_tar,
             no_wasm_opt,
             debug_variant,
@@ -65,7 +72,8 @@ fn main() -> Result<()> {
                 crate_path,
                 package_json,
                 out_dir,
-                profile,
+                release_profile,
+                debug_profile,
                 wasm_bindgen_tar,
                 wasm_opt: !no_wasm_opt,
                 debug_variant,

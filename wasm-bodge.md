@@ -435,9 +435,39 @@ The tool will preserve all fields and add the necessary `exports`, `main`,
 | `--package-json <path>` | No | `./package.json` | Template package.json |
 | `--out-dir <path>` | No | `./dist` | Output directory |
 | `--wasm-bindgen-tar <path>` | No | - | Use prebuilt wasm-bindgen output |
-| `--profile <name>` | No | `release` | Cargo build profile |
+| `--release-profile <name>` | No | `release` | Cargo profile for the release variant (alias: `--profile`) |
+| `--debug-profile <name>` | No | `wasm-debug` | Cargo profile for the debug variant (requires `--debug-variant`) |
+| `--debug-variant` | No | `false` | Also build a debug variant exposed via `./debug/*` subpath exports |
+| `--no-wasm-opt` | No | `false` | Skip wasm-opt optimization on the release variant |
 
 *Not required if `--wasm-bindgen-tar` is provided.
+
+### 6.2.1 Debug Variant
+
+With `--debug-variant`, wasm-bodge drives two independent cargo builds:
+
+1. `cargo build --profile <release-profile>` — produces the optimized
+   wasm. `wasm-opt` is applied to this one.
+2. `cargo build --profile <debug-profile>` — produces the debug wasm
+   with DWARF preserved. `wasm-opt` is *not* applied (binaryen's DWARF
+   support cannot process wasm-bindgen's `--keep-debug` output, and
+   running `wasm-opt` without `-g` would strip the symbols we just
+   preserved).
+
+The debug profile must be declared in the crate's `Cargo.toml` or its
+workspace root's `Cargo.toml`. If it is not, wasm-bodge emits a warning
+and falls back to copying the release wasm into the debug slot; DWARF
+will then only be preserved if `[profile.release]` already preserves it.
+
+Recommended profile:
+
+```toml
+[profile.wasm-debug]
+inherits = "dev"
+debug = "full"
+opt-level = 0
+strip = "none"
+```
 
 ### 6.3 Optional Config File
 
